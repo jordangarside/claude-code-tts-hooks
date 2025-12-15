@@ -22,7 +22,7 @@ Audio feedback for Claude Code using text-to-speech. Hear summaries of Claude's 
 ```bash
 uv python install 3.13
 uv venv --python 3.13
-uv pip install kokoro soundfile
+uv pip install kokoro soundfile pip
 ```
 
 ### 2. Start the TTS Server
