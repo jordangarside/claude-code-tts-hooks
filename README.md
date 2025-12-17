@@ -21,7 +21,7 @@ Audio feedback for Claude Code using text-to-speech. Hear summaries of Claude's 
 ### 1. Install Dependencies
 
 ```bash
-uv sync
+➜ uv sync
 ```
 
 ### 2. Configure the Server
@@ -29,7 +29,7 @@ uv sync
 Copy the example environment file and add your API key:
 
 ```bash
-cp .env.example .env
+➜ cp .env.example .env
 ```
 
 Edit `.env` and set your Groq API key:
@@ -43,18 +43,17 @@ See [Configuration](#configuration) below for all available options.
 ### 3. Start the TTS Server
 
 ```bash
-uv run tts-server
+➜ uv run tts-server
 ```
 
 ### 4. Install the Hooks
 
 ```bash
-mkdir -p ~/.claude/hooks
-
-cp claude-code-hooks/* ~/.claude/hooks/
+➜ mkdir -p ~/.claude/hooks
+➜ cp claude-code-hooks/* ~/.claude/hooks/
 ```
 
-### 5. Configure Claude Code
+### 5. Configure Claude Code Hooks
 
 Add to `~/.claude/settings.local.json`:
 
@@ -86,6 +85,14 @@ Add to `~/.claude/settings.local.json`:
   }
 }
 ```
+
+### 6. Test it Out
+
+```bash
+➜ claude --model=haiku -p 'tell me a fantasy story in 1 paragraph'
+```
+
+You may need to load `claude` and check the hooks are loaded with the `/hooks` command.
 
 ## Architecture
 
@@ -121,11 +128,13 @@ Run the TTS server on your local machine, then SSH with a reverse tunnel:
 
 ```bash
 # Local machine
-uv run tts-server
+➜ uv run tts-server
 
 # SSH to remote (forward port 20202 back to local)
-ssh -R 20202:localhost:20202 user@remote-server
+➜ ssh -R 20202:localhost:20202 user@remote-server
 ```
+
+Make sure you have the hooks copied over to the remote server, as well as updated the `~/.claude/settings.json` on the server to use them.
 
 The hooks on the remote server will send requests through the tunnel to your local TTS server for audio playback.
 
@@ -185,7 +194,7 @@ SUMMARY_OLLAMA_MODEL_SMALL=llama3.2:1b
 Or use CLI args:
 
 ```bash
-uv run tts-server --summarizer ollama
+➜ uv run tts-server --summarizer ollama
 ```
 
 **Note:** Local inference is slower than Groq, especially without a GPU. Expect 2-10+ seconds per summary depending on your hardware.
@@ -211,7 +220,7 @@ uv run tts-server --summarizer ollama
 ### Server Options
 
 ```bash
-uv run tts-server [options]
+➜ uv run tts-server [options]
 ```
 
 | Option | Default | Description |
