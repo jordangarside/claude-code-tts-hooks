@@ -435,7 +435,7 @@ class AudioPipeline:
                     self.pending_messages.popleft()
 
                 # Save audio and add to ready queue
-                audio_file = save_audio(audio, self.tts.get_sample_rate())
+                audio_file = save_audio(audio, self.tts.get_sample_rate(), self.config.speed)
 
                 async with self.audio_lock:
                     ready = ReadyAudio(msg.id, msg.request_id, audio_file, msg.text)

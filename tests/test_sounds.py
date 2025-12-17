@@ -97,6 +97,34 @@ class TestSaveAudio:
         # Cleanup
         os.unlink(path)
 
+    def test_speed_requires_rubberband(self):
+        """Test that speed != 1.0 requires rubberband (Python package + CLI tool)."""
+        import shutil
+
+        audio = np.random.randn(24000).astype(np.float32) * 0.1
+
+        # Check if both pyrubberband package AND rubberband CLI are available
+        try:
+            import pyrubberband  # noqa: F401
+            rubberband_available = shutil.which("rubberband") is not None
+        except ImportError:
+            rubberband_available = False
+
+        if rubberband_available:
+            # Should work if fully installed
+            import soundfile as sf
+            path = save_audio(audio, 24000, speed=1.5)
+            data, sr = sf.read(path)
+            # Sample rate unchanged (rubberband stretches audio, not sample rate)
+            assert sr == 24000
+            # Audio should be shorter (sped up)
+            assert len(data) < len(audio)
+            os.unlink(path)
+        else:
+            # Should raise ImportError if either component is missing
+            with pytest.raises(ImportError, match="speed changes"):
+                save_audio(audio, 24000, speed=1.5)
+
 
 class TestSoundManager:
     """Tests for SoundManager class."""

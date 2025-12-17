@@ -119,6 +119,11 @@ def create_app(config: ServerConfig) -> FastAPI:
         # Startup
         log.info("Starting TTS server...")
 
+        # Check rubberband availability if speed is configured
+        if config.audio.speed != 1.0:
+            from .core.sounds import _check_rubberband_available
+            _check_rubberband_available()
+
         # Initialize TTS backend
         tts = create_tts(config.tts)
         await tts.initialize()
@@ -184,9 +189,10 @@ def _log_startup_config(config: ServerConfig) -> None:
 
     # Audio config
     audio = config.audio
+    speed_str = f", speed={audio.speed}x" if audio.speed != 1.0 else ""
     log.info(
         f"Audio: interrupt={audio.interrupt}, queue={audio.queue}, "
-        f"min_duration={audio.min_duration}s, max_queue={audio.max_queue}"
+        f"min_duration={audio.min_duration}s, max_queue={audio.max_queue}{speed_str}"
     )
 
 
@@ -225,6 +231,12 @@ def _log_startup_config(config: ServerConfig) -> None:
     "--drop-sound/--no-drop-sound",
     default=None,
     help="Play sound when messages dropped (env: AUDIO_DROP_SOUND)",
+)
+@click.option(
+    "--speed",
+    default=None,
+    type=float,
+    help="Playback speed multiplier, e.g. 1.5 for 50%% faster (env: AUDIO_SPEED)",
 )
 @click.option(
     "--log-level",
@@ -270,6 +282,7 @@ def main(
     max_queue: int | None,
     interrupt_chime: bool | None,
     drop_sound: bool | None,
+    speed: float | None,
     log_level: str | None,
     summarizer: str | None,
     ollama_model_large: str | None,
@@ -317,6 +330,7 @@ def main(
             "max_queue": max_queue,
             "interrupt_chime": interrupt_chime,
             "drop_sound": drop_sound,
+            "speed": speed,
         }.items() if v is not None
     }
     if audio_overrides:

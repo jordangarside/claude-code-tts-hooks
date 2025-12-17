@@ -72,16 +72,90 @@ def generate_drop_tone(sample_rate: int = 24000) -> np.ndarray:
     return pluck.astype(np.float32)
 
 
-def save_audio(audio: np.ndarray, sample_rate: int = 24000) -> Path:
+def _check_rubberband_available() -> None:
+    """Check if rubberband CLI tool is available.
+
+    Raises:
+        ImportError: If rubberband is not installed or not functional.
+    """
+    import shutil
+    import subprocess
+
+    # Check for pyrubberband Python package
+    try:
+        import pyrubberband  # noqa: F401
+    except ImportError:
+        raise ImportError(
+            "pyrubberband is required for audio speed changes.\n"
+            "Install it with:\n"
+            "  ➜ uv add pyrubberband\n\n"
+            "Or set AUDIO_SPEED=1.0 to disable speed changes."
+        )
+
+    # Check for rubberband CLI tool
+    if not shutil.which("rubberband"):
+        raise ImportError(
+            "rubberband CLI tool is required for audio speed changes.\n"
+            "Install it with:\n"
+            "  ➜ brew install rubberband  (macOS)\n"
+            "  ➜ sudo apt install rubberband-cli  (Linux)\n\n"
+            "Or set AUDIO_SPEED=1.0 to disable speed changes."
+        )
+
+    # Verify it actually works
+    try:
+        result = subprocess.run(
+            ["rubberband", "--version"],
+            capture_output=True,
+            timeout=5,
+        )
+        if result.returncode != 0:
+            raise ImportError("rubberband CLI tool is installed but not working properly.")
+    except subprocess.TimeoutExpired:
+        raise ImportError("rubberband CLI tool timed out. It may not be installed correctly.")
+    except OSError as e:
+        raise ImportError(f"rubberband CLI tool error: {e}")
+
+
+def time_stretch(audio: np.ndarray, sample_rate: int, speed: float) -> np.ndarray:
+    """Time-stretch audio while preserving pitch using rubberband.
+
+    Args:
+        audio: Audio data as numpy array.
+        sample_rate: Sample rate in Hz.
+        speed: Speed multiplier (1.0 = normal, 1.5 = 50% faster).
+
+    Returns:
+        Time-stretched audio array.
+
+    Raises:
+        ImportError: If rubberband is not installed or not functional.
+    """
+    _check_rubberband_available()
+
+    import pyrubberband as pyrb
+
+    return pyrb.time_stretch(audio, sample_rate, speed).astype(audio.dtype)
+
+
+def save_audio(audio: np.ndarray, sample_rate: int = 24000, speed: float = 1.0) -> Path:
     """Save audio to a temporary WAV file.
 
     Args:
         audio: Audio data as numpy array.
         sample_rate: Sample rate in Hz.
+        speed: Playback speed multiplier (1.0 = normal, 1.5 = 50% faster).
+            Requires pyrubberband for speed != 1.0 (pitch-preserving).
 
     Returns:
         Path to the temporary file.
+
+    Raises:
+        ImportError: If speed != 1.0 and pyrubberband is not installed.
     """
+    if speed != 1.0:
+        audio = time_stretch(audio, sample_rate, speed)
+
     with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as f:
         path = Path(f.name)
     sf.write(path, audio, sample_rate)

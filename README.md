@@ -172,6 +172,7 @@ All settings can be configured via environment variables in `.env` or CLI args. 
 | `AUDIO_MAX_QUEUE` | `10` | Maximum queue depth |
 | `AUDIO_INTERRUPT_CHIME` | `true` | Play chime on interrupt |
 | `AUDIO_DROP_SOUND` | `true` | Play sound when messages dropped |
+| `AUDIO_SPEED` | `1.0` | Playback speed multiplier (requires rubberband, see below) |
 
 ### TTS Settings
 
@@ -239,6 +240,7 @@ Or use CLI args:
 | `--no-interrupt-chime` | - | Disable interrupt chime |
 | `--drop-sound` | `true` | Play blip when messages are skipped |
 | `--no-drop-sound` | - | Disable drop sound |
+| `--speed` | `1.0` | Playback speed (1.5 = 50% faster, requires rubberband) |
 | `--log-level` | `INFO` | Log level: `DEBUG`, `INFO`, `WARNING`, `ERROR` |
 | `--summarizer` | `groq` | Summarizer backend: `groq` or `ollama` |
 | `--ollama-model-large` | `llama3.1:8b` | Ollama model for long responses |
@@ -262,6 +264,29 @@ The `--interrupt` and `--queue` options are independent and combine as follows:
 |-------|------|--------|
 | **Interrupt Chime** (two-note G5 -> C6) | Playing audio is interrupted | `--interrupt-chime` / `--no-interrupt-chime` |
 | **Drop tone** (short blip) | Message skipped without playing | `--drop-sound` / `--no-drop-sound` |
+
+### Playback Speed
+
+Speed up audio playback while preserving pitch using the `--speed` option:
+
+```bash
+➜ uv run tts-server --speed 1.5  # 50% faster
+```
+
+**Requires rubberband** (optional dependency):
+
+```bash
+# macOS
+➜ brew install rubberband
+
+# Linux (Debian/Ubuntu)
+➜ sudo apt install rubberband-cli
+
+# Then install Python bindings
+➜ uv sync --extra speed
+```
+
+The rubberband library provides high-quality pitch-preserving time-stretching. If `AUDIO_SPEED` is left at the default (1.0), rubberband is not required.
 
 ## Voices
 
