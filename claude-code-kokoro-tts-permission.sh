@@ -23,12 +23,16 @@ rm -f "$ERROR_LOG"
 # Log success with input and output
 log_result() {
   local input="$1"
-  local output="$2"
+  local description="$2"
+  local output="$3"
   {
     echo "=== $(date) ==="
     echo ""
     echo "--- Input ---"
     echo "$input" | jq '.' 2>/dev/null || echo "$input"
+    echo ""
+    echo "--- Prompt Description ---"
+    echo "$description"
     echo ""
     echo "--- Output ---"
     echo "$output"
@@ -62,44 +66,37 @@ if ! (echo >/dev/tcp/localhost/"$AUDIO_PORT") 2>/dev/null; then
   exit 0
 fi
 
-# Build a description of the permission request
-case "$tool_name" in
-  Bash)
-    command=$(echo "$tool_input" | jq -r '.command // empty')
-    description="Run bash command: $command"
-    ;;
-  Write)
-    file_path=$(echo "$tool_input" | jq -r '.file_path // empty')
-    description="Write to file: $file_path"
-    ;;
-  Edit)
-    file_path=$(echo "$tool_input" | jq -r '.file_path // empty')
-    description="Edit file: $file_path"
-    ;;
-  Read)
-    file_path=$(echo "$tool_input" | jq -r '.file_path // empty')
-    description="Read file: $file_path"
-    ;;
-  Glob|Grep)
-    pattern=$(echo "$tool_input" | jq -r '.pattern // empty')
-    description="Search with $tool_name: $pattern"
-    ;;
-  WebFetch)
-    url=$(echo "$tool_input" | jq -r '.url // empty')
-    description="Fetch URL: $url"
-    ;;
-  *)
-    description="Use $tool_name tool"
-    ;;
-esac
+# Build description for Groq - include Claude's description if present
+claude_description=$(echo "$tool_input" | jq -r '.description // empty')
+if [ -n "$claude_description" ]; then
+  prompt_description="Tool: $tool_name. Description: $claude_description. Input: $tool_input"
+else
+  prompt_description="Tool: $tool_name. Input: $tool_input"
+fi
 
 # Summarize for TTS using cheap model
-SYSTEM_PROMPT="Convert this permission request into a brief spoken announcement (under 15 words). Include the tool type (Bash, Write, Edit, etc.) and what it's for. Start with 'Permission requested:'. Example: 'Permission requested: Bash command to check GitHub API'. No quotes, no special characters. Output ONLY the announcement."
+SYSTEM_PROMPT="Convert this permission request into a brief spoken announcement (under 30 words). Start with 'Permission requested:'. No quotes, no special characters. Output ONLY the announcement.
+
+Examples:
+Input: Tool: Bash. Description: Install dependencies. Input: {\"command\":\"npm install\",\"description\":\"Install dependencies\"}
+Output: Permission requested: Command to install node dependencies
+
+Input: Tool: WebFetch. Input: {\"url\":\"https://docs.python.org/3/library/json.html\",\"prompt\":\"How do I parse JSON?\"}
+Output: Permission requested: Fetch Python documentation page
+
+Input: Tool: Edit. Input: {\"file_path\":\"/src/auth.js\",\"old_string\":\"token\",\"new_string\":\"sessionToken\"}
+Output: Permission requested: Edit auth.js file
+
+Input: Tool: Bash. Description: Show working tree status. Input: {\"command\":\"git status\",\"description\":\"Show working tree status\"}
+Output: Permission requested: Command to show working tree status
+
+Input: Tool: Bash. Input: {\"command\":\"docker ps -a\"}
+Output: Permission requested: Command to list all Docker containers"
 
 groq_response=$(curl -s --max-time 5 -X POST "https://api.groq.com/openai/v1/chat/completions" \
     -H "Authorization: Bearer $SUMMARY_GROQ_API_KEY" \
     -H "Content-Type: application/json" \
-    -d "$(jq -n --arg system "$SYSTEM_PROMPT" --arg content "$description" --arg model "$GROQ_MODEL" '{
+    -d "$(jq -n --arg system "$SYSTEM_PROMPT" --arg content "$prompt_description" --arg model "$GROQ_MODEL" '{
       model: $model,
       messages: [
         {role: "system", content: $system},
@@ -121,7 +118,7 @@ if [ -z "$summary" ]; then
 fi
 
 # Log input and output
-log_result "$input" "$summary"
+log_result "$input" "$prompt_description" "$summary"
 
 # Send to TTS server (non-blocking, fire and forget)
 echo "$summary" | nc -w 1 localhost "$AUDIO_PORT" >/dev/null 2>&1 &
