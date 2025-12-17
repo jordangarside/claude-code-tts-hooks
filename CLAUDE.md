@@ -58,3 +58,5 @@ Output logs:
 ## Commit Messages
 
 Do not include the "Generated with Claude Code" line in commit messages.
+
+Commits should still include the `Co-Authored-By` line.

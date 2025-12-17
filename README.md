@@ -17,18 +17,16 @@ Audio feedback for Claude Code using text-to-speech. Hear summaries of Claude's 
 
 ## Installation
 
-### 1. Set Up Python Environment
+### 1. Install Dependencies
 
 ```bash
-uv python install 3.13
-uv venv --python 3.13
-uv pip install kokoro soundfile pip
+uv sync
 ```
 
 ### 2. Start the TTS Server
 
 ```bash
-uv run kokoro-server.py --port 20202
+uv run kokoro-server --port 20202
 ```
 
 ### 3. Install the Hooks
@@ -93,7 +91,7 @@ Run the TTS server on your local machine, then SSH with a reverse tunnel:
 
 ```bash
 # Local machine
-uv run kokoro-server.py --port 20202
+uv run kokoro-server --port 20202
 
 # SSH to remote
 ssh -R 20202:localhost:20202 user@remote-server
@@ -124,9 +122,49 @@ The hooks on the remote server will send audio back through the tunnel to your l
 
 **TTS Server:**
 - Async architecture handles multiple connections
-- New requests interrupt currently playing audio
-- Plays a two-note chime (G5→C6) on interruption
-- Rapid requests: plays ~0.8s snippets of each, then full final message
+- Configurable interrupt and queue behavior
+- Optional audio indicators (chime on interrupt, blip on skip)
+
+### Server Options
+
+```bash
+uv run kokoro-server [options]
+```
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--port` | `20202` | Port to listen on |
+| `--voice` | `af_heart` | Kokoro voice to use |
+| `--lang` | `a` | Language code (`a` = American English) |
+| `--interrupt` | `true` | Allow new audio to interrupt playing audio |
+| `--no-interrupt` | - | Disable interrupts (play to completion) |
+| `--min-duration` | `1.5` | Seconds to play before allowing interrupt |
+| `--queue` | `true` | Queue messages to play in order |
+| `--no-queue` | - | Skip to latest message only |
+| `--max-queue` | `10` | Maximum queue depth (oldest dropped) |
+| `--interrupt-chime` | `true` | Play chime when interrupting audio |
+| `--no-interrupt-chime` | - | Disable interrupt chime |
+| `--drop-sound` | `true` | Play blip when messages are skipped |
+| `--no-drop-sound` | - | Disable drop sound |
+| `--log-level` | `INFO` | Log level: `DEBUG`, `INFO`, `WARNING`, `ERROR` |
+
+### Interrupt and Queue Behavior
+
+The `--interrupt` and `--queue` options are independent and combine as follows:
+
+| interrupt | queue | Behavior |
+|-----------|-------|----------|
+| true | true | **Default.** Interrupt after min-duration to play next queued message. All messages eventually play. |
+| true | false | Interrupt after min-duration to skip to latest. Intermediate messages are dropped. |
+| false | true | Play all messages to completion in order. No interrupts. |
+| false | false | Play current to completion, then skip to latest. Intermediate messages are dropped. |
+
+### Audio Indicators
+
+| Sound | When | Option |
+|-------|------|--------|
+| **Interrupt Chime** (two-note G5→C6) | Playing audio is interrupted | `--interrupt-chime` / `--no-interrupt-chime` |
+| **Drop tone** (short blip) | Message skipped without playing | `--drop-sound` / `--no-drop-sound` |
 
 ## Voices
 
