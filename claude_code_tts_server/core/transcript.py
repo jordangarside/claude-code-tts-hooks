@@ -3,7 +3,6 @@
 import json
 import re
 from dataclasses import dataclass
-from pathlib import Path
 
 # Default max content length (~5k tokens worth)
 DEFAULT_MAX_CONTENT_LENGTH = 20000
@@ -20,35 +19,33 @@ class ParsedTranscript:
 
 
 def parse_transcript(
-    path: str | Path,
+    content: str,
     max_content_length: int = DEFAULT_MAX_CONTENT_LENGTH,
 ) -> ParsedTranscript | None:
-    """Parse Claude Code transcript JSONL file.
+    """Parse Claude Code transcript JSONL content.
 
     Extracts assistant content since the last user message or interrupt.
     This mirrors the jq logic from the shell scripts.
 
     Args:
-        path: Path to the transcript JSONL file.
+        content: JSONL content string (newline-separated JSON objects).
         max_content_length: Maximum content length before truncation (default 20000).
 
     Returns:
         ParsedTranscript with content and metadata, or None if no content.
     """
-    path = Path(path)
-    if not path.exists():
+    if not content or not content.strip():
         return None
 
-    # Read JSONL
+    # Parse JSONL content
     entries = []
-    with open(path) as f:
-        for line in f:
-            line = line.strip()
-            if line:
-                try:
-                    entries.append(json.loads(line))
-                except json.JSONDecodeError:
-                    continue
+    for line in content.splitlines():
+        line = line.strip()
+        if line:
+            try:
+                entries.append(json.loads(line))
+            except json.JSONDecodeError:
+                continue
 
     if not entries:
         return None

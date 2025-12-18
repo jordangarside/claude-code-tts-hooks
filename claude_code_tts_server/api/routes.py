@@ -56,25 +56,19 @@ async def summarize(
     """
     pipeline = get_pipeline(request)
 
-    # Parse transcript
-    if body.transcript_path:
-        parsed = parse_transcript(body.transcript_path)
-        if not parsed:
-            raise HTTPException(status_code=400, detail="No content in transcript")
-        content = parsed.content
-        has_tool_calls = parsed.has_tool_calls
-        content_length = parsed.length
-        if parsed.truncated:
-            log.debug(f"Content truncated to {content_length} chars")
-    elif body.transcript_content:
-        content = body.transcript_content
-        has_tool_calls = "[Tool:" in content
-        content_length = len(content)
-    else:
-        raise HTTPException(
-            status_code=400,
-            detail="Either transcript_path or transcript_content is required",
-        )
+    # Parse transcript content
+    if not body.transcript_content:
+        raise HTTPException(status_code=400, detail="transcript_content is required")
+
+    parsed = parse_transcript(body.transcript_content)
+    if not parsed:
+        raise HTTPException(status_code=400, detail="No content in transcript")
+
+    content = parsed.content
+    has_tool_calls = parsed.has_tool_calls
+    content_length = parsed.length
+    if parsed.truncated:
+        log.debug(f"Content truncated to {content_length} chars")
 
     log.info(f"POST /summarize ({content_length} chars)")
 

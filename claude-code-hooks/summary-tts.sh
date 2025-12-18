@@ -44,10 +44,10 @@ fi
 # Save transcript for debugging
 cp "$transcript_path" "$SCRIPT_DIR/$SCRIPT_NAME.transcript" 2>/dev/null
 
-# POST to TTS server
+# POST to TTS server (send content, not path - supports remote servers)
 response=$(curl -s -X POST "${TTS_URL}/summarize" \
   -H "Content-Type: application/json" \
-  -d "$(jq -n --arg path "$transcript_path" '{transcript_path: $path}')" \
+  -d "$(jq -n --rawfile content "$transcript_path" '{transcript_content: $content}')" \
   --max-time 30 2>&1)
 
 exit_code=$?

@@ -1,11 +1,15 @@
 """Tests for transcript parsing."""
 
 import json
-from pathlib import Path
 
 import pytest
 
 from claude_code_tts_server.core.transcript import parse_transcript
+
+
+def _entries_to_jsonl(entries: list[dict]) -> str:
+    """Convert list of entries to JSONL string."""
+    return "\n".join(json.dumps(entry) for entry in entries)
 
 
 class TestParseTranscript:
@@ -39,23 +43,19 @@ class TestParseTranscript:
         # Should not include the dangerous command
         assert "rm -rf" not in result.content
 
-    def test_parse_nonexistent_file(self):
-        """Test parsing a nonexistent file."""
-        result = parse_transcript("/nonexistent/path/transcript.jsonl")
+    def test_parse_empty_content(self):
+        """Test parsing empty content."""
+        assert parse_transcript("") is None
+        assert parse_transcript("   ") is None
+        assert parse_transcript(None) is None
+
+    def test_parse_invalid_jsonl(self):
+        """Test parsing invalid JSONL."""
+        result = parse_transcript("not valid json")
         assert result is None
 
-    def test_parse_empty_file(self, tmp_path):
-        """Test parsing an empty file."""
-        empty_file = tmp_path / "empty.jsonl"
-        empty_file.touch()
-
-        result = parse_transcript(empty_file)
-        assert result is None
-
-    def test_parse_transcript_truncates_long_values(self, tmp_path):
+    def test_parse_transcript_truncates_long_values(self):
         """Test that long tool input values are truncated."""
-        transcript_file = tmp_path / "long_values.jsonl"
-
         long_value = "x" * 200
         entries = [
             {
@@ -76,21 +76,15 @@ class TestParseTranscript:
             },
         ]
 
-        with open(transcript_file, "w") as f:
-            for entry in entries:
-                f.write(json.dumps(entry) + "\n")
-
-        result = parse_transcript(transcript_file)
+        result = parse_transcript(_entries_to_jsonl(entries))
 
         assert result is not None
         assert "..." in result.content
         # Original 200 chars should be truncated to 150 + "..."
         assert len(long_value) not in [len(part) for part in result.content.split()]
 
-    def test_parse_transcript_with_string_content(self, tmp_path):
+    def test_parse_transcript_with_string_content(self):
         """Test parsing transcript where user content is a string (context summarization)."""
-        transcript_file = tmp_path / "string_content.jsonl"
-
         entries = [
             # Old assistant content that should be excluded
             {
@@ -115,21 +109,15 @@ class TestParseTranscript:
             },
         ]
 
-        with open(transcript_file, "w") as f:
-            for entry in entries:
-                f.write(json.dumps(entry) + "\n")
-
-        result = parse_transcript(transcript_file)
+        result = parse_transcript(_entries_to_jsonl(entries))
 
         assert result is not None
         # Should only include content after the user message (string content)
         assert "New content" in result.content
         assert "Old content" not in result.content
 
-    def test_parse_transcript_truncates_long_content(self, tmp_path):
+    def test_parse_transcript_truncates_long_content(self):
         """Test that very long content is truncated."""
-        transcript_file = tmp_path / "long_content.jsonl"
-
         # Create content that exceeds the default limit
         long_text = "x" * 25000  # Over 20k default limit
 
@@ -146,21 +134,15 @@ class TestParseTranscript:
             },
         ]
 
-        with open(transcript_file, "w") as f:
-            for entry in entries:
-                f.write(json.dumps(entry) + "\n")
-
-        result = parse_transcript(transcript_file)
+        result = parse_transcript(_entries_to_jsonl(entries))
 
         assert result is not None
         assert result.truncated is True
         assert "[Earlier content truncated...]" in result.content
         assert result.length < 25000  # Should be truncated
 
-    def test_parse_transcript_custom_max_length(self, tmp_path):
+    def test_parse_transcript_custom_max_length(self):
         """Test custom max content length."""
-        transcript_file = tmp_path / "custom_limit.jsonl"
-
         entries = [
             {
                 "type": "user",
@@ -174,15 +156,13 @@ class TestParseTranscript:
             },
         ]
 
-        with open(transcript_file, "w") as f:
-            for entry in entries:
-                f.write(json.dumps(entry) + "\n")
+        content = _entries_to_jsonl(entries)
 
         # With default limit, should not truncate
-        result = parse_transcript(transcript_file)
+        result = parse_transcript(content)
         assert result.truncated is False
 
         # With small limit, should truncate
-        result = parse_transcript(transcript_file, max_content_length=100)
+        result = parse_transcript(content, max_content_length=100)
         assert result.truncated is True
         assert "[Earlier content truncated...]" in result.content

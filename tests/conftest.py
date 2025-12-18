@@ -1,14 +1,10 @@
 """Pytest fixtures for Claude Code TTS Server tests."""
 
-import asyncio
 import json
-import tempfile
-from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import numpy as np
 import pytest
-from fastapi.testclient import TestClient
 
 from claude_code_tts_server.config import AudioConfig, ServerConfig, SummarizerConfig, TTSConfig
 from claude_code_tts_server.core.audio_manager import AudioManager
@@ -91,11 +87,14 @@ def server_config(tts_config, summarizer_config, audio_config):
     )
 
 
-@pytest.fixture
-def sample_transcript_jsonl(tmp_path):
-    """Create a sample transcript JSONL file."""
-    transcript_file = tmp_path / "transcript.jsonl"
+def _entries_to_jsonl(entries: list[dict]) -> str:
+    """Convert list of entries to JSONL string."""
+    return "\n".join(json.dumps(entry) for entry in entries)
 
+
+@pytest.fixture
+def sample_transcript_jsonl():
+    """Sample transcript JSONL content."""
     entries = [
         {
             "type": "user",
@@ -112,19 +111,12 @@ def sample_transcript_jsonl(tmp_path):
             }
         },
     ]
-
-    with open(transcript_file, "w") as f:
-        for entry in entries:
-            f.write(json.dumps(entry) + "\n")
-
-    return transcript_file
+    return _entries_to_jsonl(entries)
 
 
 @pytest.fixture
-def sample_transcript_with_tools(tmp_path):
-    """Create a sample transcript with tool calls."""
-    transcript_file = tmp_path / "transcript_tools.jsonl"
-
+def sample_transcript_with_tools():
+    """Sample transcript with tool calls."""
     entries = [
         {
             "type": "user",
@@ -146,19 +138,12 @@ def sample_transcript_with_tools(tmp_path):
             }
         },
     ]
-
-    with open(transcript_file, "w") as f:
-        for entry in entries:
-            f.write(json.dumps(entry) + "\n")
-
-    return transcript_file
+    return _entries_to_jsonl(entries)
 
 
 @pytest.fixture
-def sample_transcript_with_interrupt(tmp_path):
-    """Create a sample transcript with an interrupt."""
-    transcript_file = tmp_path / "transcript_interrupt.jsonl"
-
+def sample_transcript_with_interrupt():
+    """Sample transcript with an interrupt."""
     entries = [
         {
             "type": "user",
@@ -198,9 +183,4 @@ def sample_transcript_with_interrupt(tmp_path):
             }
         },
     ]
-
-    with open(transcript_file, "w") as f:
-        for entry in entries:
-            f.write(json.dumps(entry) + "\n")
-
-    return transcript_file
+    return _entries_to_jsonl(entries)

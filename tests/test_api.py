@@ -97,11 +97,11 @@ class TestSpeakEndpoint:
 class TestSummarizeEndpoint:
     """Tests for /summarize endpoint."""
 
-    def test_summarize_with_path(self, client, mock_audio_manager, sample_transcript_jsonl):
-        """Test summarize with transcript path queues immediately."""
+    def test_summarize_with_content(self, client, mock_audio_manager, sample_transcript_jsonl):
+        """Test summarize with transcript content queues immediately."""
         response = client.post(
             "/summarize",
-            json={"transcript_path": str(sample_transcript_jsonl)},
+            json={"transcript_content": sample_transcript_jsonl},
         )
 
         assert response.status_code == 200
@@ -112,22 +112,20 @@ class TestSummarizeEndpoint:
         # Should queue request, not call summarizer directly
         mock_audio_manager.add_request.assert_called_once()
 
-    def test_summarize_with_content(self, client, mock_audio_manager):
-        """Test summarize with direct content."""
+    def test_summarize_empty_content(self, client):
+        """Test summarize with empty content."""
         response = client.post(
             "/summarize",
-            json={"transcript_content": "Short response"},
+            json={"transcript_content": ""},
         )
 
-        assert response.status_code == 200
-        mock_audio_manager.add_request.assert_called_once()
+        assert response.status_code == 400
 
     def test_summarize_no_input(self, client):
         """Test summarize with no input."""
         response = client.post("/summarize", json={})
 
-        assert response.status_code == 400
-        assert "required" in response.json()["detail"].lower()
+        assert response.status_code == 422  # Pydantic validation error
 
 
 class TestPermissionEndpoint:

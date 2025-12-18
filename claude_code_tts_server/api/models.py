@@ -6,13 +6,8 @@ from pydantic import BaseModel, Field
 class SummarizeRequest(BaseModel):
     """Request for the /summarize endpoint (Stop hook)."""
 
-    transcript_path: str | None = Field(
-        default=None,
-        description="Path to the Claude Code transcript JSONL file",
-    )
-    transcript_content: str | None = Field(
-        default=None,
-        description="Direct transcript content (alternative to path)",
+    transcript_content: str = Field(
+        description="Claude Code transcript JSONL content",
     )
 
 
