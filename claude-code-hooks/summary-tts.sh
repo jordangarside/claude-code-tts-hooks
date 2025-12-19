@@ -45,16 +45,22 @@ fi
 cp "$transcript_path" "$SCRIPT_DIR/$SCRIPT_NAME.transcript" 2>/dev/null
 
 # POST to TTS server (send content, not path - supports remote servers)
-response=$(curl -s -X POST "${TTS_URL}/summarize" \
-  -H "Content-Type: application/json" \
-  -d "$(jq -n --rawfile content "$transcript_path" '{transcript_content: $content}')" \
-  --max-time 30 2>&1)
+# Take last 100KB of transcript - server truncates parsed content to 20KB anyway
+# Pipe JSON via stdin to avoid "Argument list too long" for large transcripts
+response=$(tail -c 100000 "$transcript_path" | \
+  jq -Rs '{transcript_content: .}' | \
+  curl -s -X POST "${TTS_URL}/summarize" \
+    -H "Content-Type: application/json" \
+    -d @- \
+    --max-time 30 2>&1)
 
 exit_code=$?
 
 if [ $exit_code -ne 0 ]; then
   log "Failed to reach TTS server: curl exit code $exit_code"
   log "Response: $response"
+  echo "Failed to reach TTS server: curl exit code $exit_code" >&2
+  [ -n "$response" ] && echo "Response: $response" >&2
   exit 1
 fi
 
@@ -64,6 +70,8 @@ if [ -n "$error" ]; then
   log "TTS server error: $error"
   detail=$(echo "$response" | jq -r '.detail // empty' 2>/dev/null)
   [ -n "$detail" ] && log "Detail: $detail"
+  echo "TTS server error: $error" >&2
+  [ -n "$detail" ] && echo "Detail: $detail" >&2
   exit 1
 fi
 
