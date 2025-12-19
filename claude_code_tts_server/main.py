@@ -242,7 +242,7 @@ def _log_startup_config(config: ServerConfig) -> None:
     "--speed",
     default=None,
     type=float,
-    help="Playback speed multiplier, e.g. 1.5 for 50%% faster (env: AUDIO_SPEED)",
+    help="Playback speed multiplier, e.g. 1.3 for 30%% faster (env: AUDIO_SPEED)",
 )
 @click.option(
     "--log-level",

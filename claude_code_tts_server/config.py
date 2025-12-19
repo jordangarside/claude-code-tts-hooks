@@ -75,7 +75,7 @@ class AudioConfig(BaseSettings):
     max_queue: int = 10
     interrupt_chime: bool = True
     drop_sound: bool = True
-    speed: float = 1.0  # Playback speed multiplier (1.0 = normal, 1.5 = 50% faster)
+    speed: float = 1.0  # Playback speed multiplier (1.0 = normal, 1.3 = 30% faster)
 
 
 class ServerConfig(BaseSettings):

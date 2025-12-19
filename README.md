@@ -240,7 +240,7 @@ Or use CLI args:
 | `--no-interrupt-chime` | - | Disable interrupt chime |
 | `--drop-sound` | `true` | Play blip when messages are skipped |
 | `--no-drop-sound` | - | Disable drop sound |
-| `--speed` | `1.0` | Playback speed (1.5 = 50% faster, requires rubberband) |
+| `--speed` | `1.0` | Playback speed (1.3 = 30% faster, requires rubberband) |
 | `--log-level` | `INFO` | Log level: `DEBUG`, `INFO`, `WARNING`, `ERROR` |
 | `--summarizer` | `groq` | Summarizer backend: `groq` or `ollama` |
 | `--ollama-model-large` | `llama3.1:8b` | Ollama model for long responses |
@@ -270,7 +270,7 @@ The `--interrupt` and `--queue` options are independent and combine as follows:
 Speed up audio playback while preserving pitch using the `--speed` option:
 
 ```bash
-➜ uv run tts-server --speed 1.5  # 50% faster
+➜ uv run tts-server --speed 1.3  # 30% faster
 ```
 
 **Requires rubberband** (optional dependency):

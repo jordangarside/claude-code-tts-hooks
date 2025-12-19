@@ -128,7 +128,7 @@ def time_stretch(audio: np.ndarray, sample_rate: int, speed: float) -> np.ndarra
     Args:
         audio: Audio data as numpy array.
         sample_rate: Sample rate in Hz.
-        speed: Speed multiplier (1.0 = normal, 1.5 = 50% faster).
+        speed: Speed multiplier (1.0 = normal, 1.3 = 30% faster).
 
     Returns:
         Time-stretched audio array.
@@ -153,7 +153,7 @@ def save_audio(audio: np.ndarray, sample_rate: int = 24000, speed: float = 1.0) 
     Args:
         audio: Audio data as numpy array.
         sample_rate: Sample rate in Hz.
-        speed: Playback speed multiplier (1.0 = normal, 1.5 = 50% faster).
+        speed: Playback speed multiplier (1.0 = normal, 1.3 = 30% faster).
             Requires pyrubberband for speed != 1.0 (pitch-preserving).
 
     Returns:
