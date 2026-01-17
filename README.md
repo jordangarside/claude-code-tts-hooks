@@ -10,6 +10,16 @@ Audio feedback for Claude Code using text-to-speech. Hear summaries of Claude's 
 - **SSH support** - Works on remote servers via reverse tunnel
 - **REST API** - Control the TTS server programmatically
 
+## Audio Examples
+
+**Response summary** - After Claude completes a task
+
+https://github.com/user-attachments/assets/217b3273-092b-4a70-9b6a-1ed45777b60a
+
+**Permission request** - Before a tool requires approval
+
+https://github.com/user-attachments/assets/df42f17a-2c52-4346-91df-0510c49a8655
+
 ## Requirements
 
 - [Claude Code](https://docs.anthropic.com/en/docs/claude-code)
